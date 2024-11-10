@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <iomanip> 
 #include <unordered_set>
 #include <unordered_map>
 #include <fstream>
@@ -19,7 +20,7 @@ public:
     string getCollegeName() const { return collegeName; }
 };
 
-class Department
+class Department : public College
 {
 private:
     string departmentName;
@@ -29,7 +30,7 @@ public:
     Department() {}
     Department(string name, const vector<string> &subs)
         : departmentName(name), subjects(subs) {}
-        
+
     string getName() const { return departmentName; }
 
     void printSubjects() const
@@ -97,6 +98,7 @@ public:
 class StudentManagementSystem : public College, public Result
 {
     friend class attendance;
+
 private:
     vector<Student> students;
     vector<Department> departments;
@@ -134,7 +136,7 @@ public:
         {
             if (student.getKey() == key)
             {
-                const Department* dept = getDepartmentByName(deptName);
+                const Department *dept = getDepartmentByName(deptName);
                 if (dept)
                 {
                     vector<int> marks;
@@ -182,6 +184,43 @@ public:
             }
         }
     }
+   vector<int> countStudentsPerDepartment() {
+        vector<int> counts(departments.size(), 0);
+
+        for (const auto &student : students)
+        {
+            for (size_t i = 0; i < departments.size(); ++i)
+            {
+                if (student.deptName == departments[i].getName())
+                {
+                    counts[i]++;
+                    break;
+                }
+            }
+        }
+        return counts;
+    }
+
+    void displayBarGraph() {
+        vector<int> counts = countStudentsPerDepartment();
+    
+    cout << "Student Count per Department:\n";
+    for (size_t i = 0; i < departments.size(); ++i)
+    {
+        // Set a fixed width (e.g., 15) for department names
+        cout << std::left << setw(15) << departments[i].getName() << " (" << counts[i] << "): ";
+        
+        // Print stars for the department's student count
+        for (int j = 0; j < counts[i]; ++j)
+        {
+            cout << "*";
+        }
+        cout << "\n";
+    }
+    }
+
+    
+
 
     void printStudentsInDepartment(const string &deptName) const
     {
@@ -224,8 +263,31 @@ public:
         }
         cout << "Student with key '" << key << "' not found.\n";
     }
+    void AddStudentcsv(const string &filename)
+    {
+        ofstream file(filename, std::ios::out | std::ios::app); // Open in append mode
+        if (!file.is_open())
+        {
+            cerr << "Error opening file!" << endl;
+            return;
+        }
+        file << "UniqueKey,Name,StudentID,DOB,Year,RegistrationYear,Department\n"; // Add headers only once
 
-    void deleteStudent(const string &key, const string &filename,string nameToDelete)
+        // Writing student data to file
+        for (const auto &student : students)
+        {
+            file << student.getKey() << ","
+                 << student.name << ","
+                 << student.studentID << ","
+                 << student.printdob() << ","
+                 << student.year << ","
+                 << student.regYear << ","
+                 << student.deptName << "\n";
+        }
+        file.close();
+        cout << "Student data saved to " << filename << endl;
+    }
+    void deleteStudent(const string &key, const string &filename)
     {
         ifstream file(filename);
         vector<string> rows;
@@ -245,10 +307,10 @@ public:
         while (getline(file, line))
         {
             stringstream ss(line);
-            string name;
-            getline(ss, name, ','); // Assuming name is in the first column
+            string UniqueKey;
+            getline(ss, UniqueKey, ','); // Assuming UniqueKey is in the first column
 
-            if (name != nameToDelete)
+            if (UniqueKey != key)
             {
                 rows.push_back(line); // Only keep rows that don't match
             }
@@ -263,106 +325,102 @@ public:
         }
         outfile.close();
 
-        cout << "Student with name '" << nameToDelete << "' deleted successfully (if found)." << endl;
-    
-    auto it = remove_if(students.begin(), students.end(), [&](const Student &student)
-                        { return student.getKey() == key; });
+        cout << "Student with name '" << key << "' deleted successfully (if found)." << endl;
 
-    if (it != students.end())
-    {
-        students.erase(it, students.end());
-        cout << "Student deleted successfully.\n";
-    }
-    else
-    {
-        cout << "Student not found.\n";
-    }
-    }
+        auto it = remove_if(students.begin(), students.end(), [&](const Student &student)
+                            { return student.getKey() == key; });
 
-const Department *getDepartmentByName(const string &deptName) const
-{
-    for (const auto &dept : departments)
-    {
-        if (dept.getName() == deptName)
-            return &dept;
-    }
-    return nullptr;
-}
-void printCommonNameStudents() const
-{
-    unordered_map<string, unordered_set<string>> nameToDepartments;
-
-    for (const auto &student : students)
-    {
-        nameToDepartments[student.name].insert(student.deptName);
-    }
-    bool found = false;
-    for (const auto &entry : nameToDepartments)
-    {
-        const string &name = entry.first;
-        const unordered_set<string> &departments = entry.second;
-
-        if (departments.size() > 1)
+        if (it != students.end())
         {
-            cout << name << " is present in the following departments: ";
-            for (const auto &dept : departments)
-            {
-                cout << dept << " ";
-            }
-            cout << endl;
-            found = true;
-        }
-    }
-
-    if (!found)
-    {
-        cout << "No common names found across different departments." << endl;
-    }
-}
-
-
-
-    void checkForDuplicateEntries() const
-{
-    unordered_set<string> keys;
-    bool duplicateFound = false;
-
-    for (const auto &student : students)
-    {
-        if (keys.count(student.getKey()) > 0)
-        {
-            cout << "Duplicate entry found for student: " << student.name << " with key: " << student.getKey() << endl;
-            duplicateFound = true;
+            students.erase(it, students.end());
+            cout << "Student deleted successfully.\n";
         }
         else
         {
-            keys.insert(student.getKey());
+            cout << "Student not found.\n";
         }
     }
 
-    if (!duplicateFound)
+    const Department *getDepartmentByName(const string &deptName) const
     {
-        cout << "No duplicate entries found.\n";
+        for (const auto &dept : departments)
+        {
+            if (dept.getName() == deptName)
+                return &dept;
+        }
+        return nullptr;
     }
-}
+    void printCommonNameStudents() const
+    {
+        unordered_map<string, unordered_set<string>> nameToDepartments;
 
-void printAllStudents() const
-{
-    if (students.empty())
-    {
-        cout << "No students in the system.\n";
-        return;
+        for (const auto &student : students)
+        {
+            nameToDepartments[student.name].insert(student.deptName);
+        }
+        bool found = false;
+        for (const auto &entry : nameToDepartments)
+        {
+            const string &name = entry.first;
+            const unordered_set<string> &departments = entry.second;
+
+            if (departments.size() > 1)
+            {
+                cout << name << " is present in the following departments: ";
+                for (const auto &dept : departments)
+                {
+                    cout << dept << " ";
+                }
+                cout << endl;
+                found = true;
+            }
+        }
+
+        if (!found)
+        {
+            cout << "No common names found across different departments." << endl;
+        }
     }
 
-    for (const auto &student : students)
+    void checkForDuplicateEntries() const
     {
-        cout << "Name: " << student.name << ", ID: " << student.studentID
-             << ", Year: " << student.year << ", Registration Date: " << student.regYear << ", Unique Key: " << student.getKey() << endl;
+        unordered_set<string> keys;
+        bool duplicateFound = false;
+
+        for (const auto &student : students)
+        {
+            if (keys.count(student.getKey()) > 0)
+            {
+                cout << "Duplicate entry found for student: " << student.name << " with key: " << student.getKey() << endl;
+                duplicateFound = true;
+            }
+            else
+            {
+                keys.insert(student.getKey());
+            }
+        }
+
+        if (!duplicateFound)
+        {
+            cout << "No duplicate entries found.\n";
+        }
     }
-}
+
+    void printAllStudents() const
+    {
+        if (students.empty())
+        {
+            cout << "No students in the system.\n";
+            return;
+        }
+
+        for (const auto &student : students)
+        {
+            cout << "Name: " << student.name << ", ID: " << student.studentID
+                 << ", Year: " << student.year << ", Registration Date: " << student.regYear << ", Unique Key: " << student.getKey() << endl;
+        }
+    }
 };
-
-
 
 class attendance : public Department
 {
@@ -529,7 +587,7 @@ void login()
         case 2:
             cout << "Enter key of student to delete: ";
             cin >> key;
-            sms.deleteStudent(key,"trial.csv","we");
+            sms.deleteStudent(key, "trial.csv");
             goto uu;
         case 3:
             cout << "Enter the name of department to display student details: ";
@@ -550,7 +608,7 @@ void login()
             sms.printCommonNameStudents();
             goto uu;
         case 7:
-            sms.deleteStudent(key,"trial.csv","we");
+            sms.AddStudentcsv("trial.csv");
             goto uu;
         case 8:
             cout << "Enter the student's key and department to enter attendance: ";
@@ -563,7 +621,11 @@ void login()
             a.displayattendance(sms, key, dept);
             goto uu;
         case 10:
-            exit(0);
+            sms.displayBarGraph();
+             goto uu;
+        case 11:
+            mainMenu();
+            break;
         default:
             cout << "Invalid selection!" << endl;
             goto uu;
@@ -648,7 +710,7 @@ uu:
     case 2:
         cout << "Enter key of student to delete: ";
         cin >> key;
-        sms.deleteStudent(key,"trial.csv","we");
+        sms.deleteStudent(key, "trial.csv");
         goto uu;
     case 3:
         cout << "Enter the name of department to display student details: ";
@@ -669,7 +731,7 @@ uu:
         sms.printCommonNameStudents();
         goto uu;
     case 7:
-        sms.deleteStudent(key,"trial.csv","we");
+        sms.AddStudentcsv("trial.csv");
         goto uu;
     case 8:
         cout << "Enter the student's key and department to enter attendance: ";
@@ -682,7 +744,7 @@ uu:
         a.displayattendance(sms, key, dept);
         goto uu;
     case 10:
-        exit(0);
+        mainMenu();
     default:
         cout << "Invalid selection!" << endl;
         goto uu;
