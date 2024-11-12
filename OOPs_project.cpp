@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#include <iomanip> 
+#include <iomanip>
 #include <unordered_set>
 #include <unordered_map>
 #include <fstream>
@@ -184,7 +184,8 @@ public:
             }
         }
     }
-   vector<int> countStudentsPerDepartment() {
+    vector<int> countStudentsPerDepartment()
+    {
         vector<int> counts(departments.size(), 0);
 
         for (const auto &student : students)
@@ -200,28 +201,21 @@ public:
         }
         return counts;
     }
-
-    void displayBarGraph() {
-        vector<int> counts = countStudentsPerDepartment();
-    
-    cout << "Student Count per Department:\n";
-    for (size_t i = 0; i < departments.size(); ++i)
+    void displayBarGraph()
     {
-        // Set a fixed width (e.g., 15) for department names
-        cout << std::left << setw(15) << departments[i].getName() << " (" << counts[i] << "): ";
-        
-        // Print stars for the department's student count
-        for (int j = 0; j < counts[i]; ++j)
+        vector<int> counts = countStudentsPerDepartment();
+
+        cout << "Student Count per Department:\n";
+        for (size_t i = 0; i < departments.size(); ++i)
         {
-            cout << "*";
+            cout << std::left << setw(15) << departments[i].getName() << " (" << counts[i] << "): ";
+            for (int j = 0; j < counts[i]; ++j)
+            {
+                cout << "*";
+            }
+            cout << "\n";
         }
-        cout << "\n";
     }
-    }
-
-    
-
-
     void printStudentsInDepartment(const string &deptName) const
     {
         const Department *dept = getDepartmentByName(deptName);
@@ -265,15 +259,23 @@ public:
     }
     void AddStudentcsv(const string &filename)
     {
-        ofstream file(filename, std::ios::out | std::ios::app); // Open in append mode
+        ofstream file(filename, std::ios::out | std::ios::app);
+
         if (!file.is_open())
         {
             cerr << "Error opening file!" << endl;
             return;
         }
-        file << "UniqueKey,Name,StudentID,DOB,Year,RegistrationYear,Department\n"; // Add headers only once
 
-        // Writing student data to file
+        // Check if the file is empty before adding the header
+        file.seekp(0, ios::end); // Move to the end of the file
+        if (file.tellp() == 0)
+        {
+            // Write header only if the file is empty
+            file << "UniqueKey,Name,StudentID,DOB,Year,RegistrationYear,Department\n";
+        }
+
+        // Add student data to the file
         for (const auto &student : students)
         {
             file << student.getKey() << ","
@@ -284,6 +286,7 @@ public:
                  << student.regYear << ","
                  << student.deptName << "\n";
         }
+
         file.close();
         cout << "Student data saved to " << filename << endl;
     }
@@ -298,12 +301,9 @@ public:
             cerr << "Error opening file!" << endl;
             return;
         }
-
-        // Read header and add it back to rows
         getline(file, line);
         rows.push_back(line);
 
-        // Read each line and filter out the row matching the name
         while (getline(file, line))
         {
             stringstream ss(line);
@@ -317,7 +317,6 @@ public:
         }
         file.close();
 
-        // Rewrite the file with filtered data
         ofstream outfile(filename, std::ios::out | std::ios::trunc);
         for (const auto &row : rows)
         {
@@ -429,7 +428,6 @@ private:
 
 public:
     void setattend(const vector<float> &at) { attendanceData = at; }
-    // Add attendance for a student for a specific subject
     void addattendance(StudentManagementSystem &sms, const string &key, const string &deptName)
     {
 
@@ -478,10 +476,10 @@ public:
                         return;
                     }
 
-                    // Display the attendance for each subject
                     for (size_t i = 0; i < dept->subjects.size(); ++i)
                     {
-                        cout << dept->subjects[i] << ": " << attendanceData[i] << "\n";
+
+                        cout << dept->subjects[i] << ": " << attendanceData[i] << "%\n";
                     }
                 }
                 else
@@ -491,7 +489,7 @@ public:
                 }
             }
         }
-        cout << "Student with key '" << key << "' not found.\n";
+        // cout << "Student with key '" << key << "' not found.\n";
     }
 };
 void login();
@@ -547,7 +545,7 @@ void login()
         cout << "*************************** Welcome to Student Database System ***********************" << endl;
         cout << "+++++++++++++++++++++++++ Contains information of all the students +++++++++++++++++" << endl;
     uu:
-        cout << "Enter the index of action you want to perform: \n 1. Enter student's data \n 2. Delete a student's data \n 3. Display student's data branch wise \n 4. Enter student's marks for all subjects \n 5. Get result of a student \n 6. Check same first name students in different branches \n 7. Get all the students data in a csv file \n 8.To add atendance \n 9. To display attendance \n 10.exit" << endl;
+        cout << "Enter the index of action you want to perform: \n 1. Enter student's data \n 2. Delete a student's data \n 3. Display student's data branch wise \n 4. Enter student's marks for all subjects \n 5. Get result of a student \n 6. Check same first name students in different branches \n 7. Get all the students data in a csv file \n 8.To add atendance \n 9. To display attendance \n 10.Display students'number in each branch through bar graph \n 11. return to main menu" << endl;
         cin >> s;
         switch (s)
         {
@@ -579,7 +577,6 @@ void login()
 
                 Student newStudent(name, r, d, y, rey, de);
                 sms.addStudent(newStudent, *dept);
-                // cout << "Unique key for this student is " << newStudent.getKey();
             }
             sms.printAllStudents();
             goto uu;
@@ -622,7 +619,7 @@ void login()
             goto uu;
         case 10:
             sms.displayBarGraph();
-             goto uu;
+            goto uu;
         case 11:
             mainMenu();
             break;
@@ -670,7 +667,7 @@ void registr()
     cout << "*************************** Welcome to Student Database System ***********************" << endl;
     cout << "+++++++++++++++++++++++++ Contains information of all the students +++++++++++++++++" << endl;
 uu:
-    cout << "Enter the index of action you want to perform: \n 1. Enter student's data \n 2. Delete a student's data \n 3. Display student's data branch wise \n 4. Enter student's marks for all subjects \n 5. Get result of a student \n 6. Check same first name students in different branches \n 7. Get all the students data in a csv file \n 8.To add atendance \n 9. To display attendance \n 10.exit" << endl;
+    cout << "Enter the index of action you want to perform: \n 1. Enter student's data \n 2. Delete a student's data \n 3. Display student's data branch wise \n 4. Enter student's marks for all subjects \n 5. Get result of a student \n 6. Check same first name students in different branches \n 7. Get all the students data in a csv file \n 8.To add atendance \n 9. To display attendance \n 10.Display students'number in each branch through bar graph \n 11. return to main menu" << endl;
     cin >> s;
     switch (s)
     {
@@ -744,7 +741,11 @@ uu:
         a.displayattendance(sms, key, dept);
         goto uu;
     case 10:
+        sms.displayBarGraph();
+        goto uu;
+    case 11:
         mainMenu();
+        break;
     default:
         cout << "Invalid selection!" << endl;
         goto uu;
@@ -851,7 +852,6 @@ int main()
 {
     int choice;
 
-    // Loop until the user chooses to exit
     while (true)
     {
         if (!isLoggedIn)
